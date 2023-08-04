@@ -8,7 +8,7 @@ class Piece:
     nomPiece=(VIDE,'ROI','DAME','TOUR','FOU','CAVALIER','PION')
         
     # Give a score value for each piece : KING=100, QUEEN=9, ROOK=5...
-    valeurPiece=(0,100,9,5,3.3,3.1,1)
+    valeurPiece=(0,100,8.5,4.8,3.3,3.1,0.9)
     
     # For the pieces moves, using method "mail box"
     tab120 = (

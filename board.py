@@ -2,6 +2,8 @@
 
 from piece import *
 import time
+import random
+from random import randint
 import os # for clear ou cls
 
 class Board:
@@ -70,6 +72,7 @@ class Board:
         - the name of the piece to promote '','q','r','b','n'
           (queen, rook, bishop, knight)
         """
+        global mList
         
         if(color==''):
             color=self.side2move
@@ -435,7 +438,7 @@ class Board:
     def caseStr2Int(self,c):
         
         """'c' given in argument is a square name like 'e2'
-        "This functino returns a square number like 52"""
+        "This function returns a square number like 52"""
 
         err=(
         'The square name must be 2 caracters i.e. e2,e4,b1...',
@@ -531,19 +534,22 @@ class Board:
     
     def evaluer(self):
         
-        """A wonderful evaluate() function returning score"""
+        """A wonderful evaluate() function returning score, test stalemate thing"""
         
         WhiteScore=0
         BlackScore=0
         
         # Parsing the board squares from 0 to 63
-        for pos1,piece in enumerate(self.cases):
+        for pos1,piece in enumerate(self.cases):         
 
             # Score ( using PESTO table )
             if(piece.couleur=='blanc'):
                 WhiteScore+=piece.valeur
                 
-                if piece.nom == 'PION':
+                if piece.nom=='VIDE':
+                    WhiteScore += 0
+                
+                elif piece.nom == 'PION':
                 # Assigning positional bonuses for pawns
                     pawn_position_bonus =  [   0,   0,   0,   0,   0,   0,  0,   0,
                                               98, 134,  61,  95,  68, 126, 34, -11,
@@ -555,7 +561,7 @@ class Board:
                                                0,   0,   0,   0,   0,   0,  0,   0]
                     WhiteScore += pawn_position_bonus[pos1]/200
                 
-                if piece.nom == 'CAVALIER':
+                elif piece.nom == 'CAVALIER':
                 # Assigning positional bonuses for knights
                     knight_position_bonus = [-167, -89, -34, -49,  61, -97, -15, -107,
                                               -73, -41,  72,  36,  23,  62,   7,  -17,
@@ -564,10 +570,10 @@ class Board:
                                               -13,   4,  16,  13,  28,  19,  21,   -8,
                                               -23,  -9,  12,  10,  19,  17,  25,  -16,
                                               -29, -53, -12,  -3,  -1,  18, -14,  -19,
-                                             -105, -21, -58, -33, -17, -28, -19,  -23]
+                                             -105,   0, -58, -33, -17, -28,   0,  -23]
                     WhiteScore += knight_position_bonus[pos1]/200
                 
-                if piece.nom == 'FOU':
+                elif piece.nom == 'FOU':
                 # Assigning positional bonuses for bishops
                     bishop_position_bonus = [-29,   4, -82, -37, -25, -42,   7,  -8,
                                              -26,  16, -18, -13,  30,  59,  18, -47,
@@ -579,7 +585,7 @@ class Board:
                                              -33,  -3, -14, -21, -13, -12, -39, -21]
                     WhiteScore += bishop_position_bonus[pos1]/200
                 
-                if piece.nom == 'TOUR':
+                elif piece.nom == 'TOUR':
                 # Assigning positional bonuses for rooks
                     rook_position_bonus =  [ 32,  42,  32,  51, 63,  9,  31,  43,
                                              27,  32,  58,  62, 80, 67,  26,  44,
@@ -591,7 +597,7 @@ class Board:
                                             -19, -13,   1,  17, 16,  7, -37, -26]
                     WhiteScore += rook_position_bonus[pos1]/200
                 
-                if piece.nom == 'DAME':
+                elif piece.nom == 'DAME':
                 # Assigning positional bonuses for queen(s)
                     queen_position_bonus =  [-28,   0,  29,  12,  59,  44,  43,  45,
                                              -24, -39,  -5,   1, -16,  57,  28,  54,
@@ -603,7 +609,7 @@ class Board:
                                               -1, -18,  -9,  10, -15, -25, -31, -50]
                     WhiteScore += queen_position_bonus[pos1]/200
                 
-                if piece.nom == 'ROI':
+                elif piece.nom == 'ROI':
                 # Assigning positional bonuses for king
                     king_position_bonus =   [-65,  23,  16, -15, -56, -34,   2,  13,
                                               29,  -1, -20,  -7,  -8,  -4, -38, -29,
@@ -618,7 +624,10 @@ class Board:
             else: 
                 BlackScore+=piece.valeur
                 
-                if piece.nom == 'PION':
+                if piece.nom=='VIDE':
+                    WhiteScore += 0
+                
+                elif piece.nom == 'PION':
                 # Assigning positional bonuses for pawns
                     pawn_position_bonus =  [   0,   0,   0,   0,   0,   0,  0,   0,
                                               98, 134,  61,  95,  68, 126, 34, -11,
@@ -630,7 +639,7 @@ class Board:
                                                0,   0,   0,   0,   0,   0,  0,   0]
                     BlackScore += pawn_position_bonus[pos1^56]/200
                 
-                if piece.nom == 'CAVALIER':
+                elif piece.nom == 'CAVALIER':
                 # Assigning positional bonuses for knights
                     knight_position_bonus = [-167, -89, -34, -49,  61, -97, -15, -107,
                                               -73, -41,  72,  36,  23,  62,   7,  -17,
@@ -639,10 +648,10 @@ class Board:
                                               -13,   4,  16,  13,  28,  19,  21,   -8,
                                               -23,  -9,  12,  10,  19,  17,  25,  -16,
                                               -29, -53, -12,  -3,  -1,  18, -14,  -19,
-                                             -105, -21, -58, -33, -17, -28, -19,  -23]
+                                             -105,   0, -58, -33, -17, -28,   0,  -23]
                     BlackScore += knight_position_bonus[pos1^56]/200
                 
-                if piece.nom == 'FOU':
+                elif piece.nom == 'FOU':
                 # Assigning positional bonuses for bishops
                     bishop_position_bonus = [-29,   4, -82, -37, -25, -42,   7,  -8,
                                              -26,  16, -18, -13,  30,  59,  18, -47,
@@ -654,7 +663,7 @@ class Board:
                                              -33,  -3, -14, -21, -13, -12, -39, -21]
                     BlackScore += bishop_position_bonus[pos1^56]/200
                 
-                if piece.nom == 'TOUR':
+                elif piece.nom == 'TOUR':
                 # Assigning positional bonuses for rooks
                     rook_position_bonus =  [ 32,  42,  32,  51, 63,  9,  31,  43,
                                              27,  32,  58,  62, 80, 67,  26,  44,
@@ -666,7 +675,7 @@ class Board:
                                             -19, -13,   1,  17, 16,  7, -37, -26]
                     BlackScore += rook_position_bonus[pos1^56]/200
                 
-                if piece.nom == 'DAME':
+                elif piece.nom == 'DAME':
                 # Assigning positional bonuses for queen(s)
                     queen_position_bonus =  [-28,   0,  29,  12,  59,  44,  43,  45,
                                              -24, -39,  -5,   1, -16,  57,  28,  54,
@@ -678,7 +687,7 @@ class Board:
                                               -1, -18,  -9,  10, -15, -25, -31, -50]
                     BlackScore += queen_position_bonus[pos1^56]/200
                 
-                if piece.nom == 'ROI':
+                elif piece.nom == 'ROI':
                 # Assigning positional bonuses for king
                     king_position_bonus =   [-65,  23,  16, -15, -56, -34,   2,  13,
                                               29,  -1, -20,  -7,  -8,  -4, -38, -29,
@@ -690,9 +699,14 @@ class Board:
                                              -15,  36,  12, -54,   8, -28,  24,  14]
                     BlackScore += king_position_bonus[pos1^56]/200
 
+        if mList == []:
+            return 0
+
         if(self.side2move=='blanc'):
-            return WhiteScore-BlackScore
+            r=randint(-10,10)/100
+            return WhiteScore+r-BlackScore
         else:
-            return BlackScore-WhiteScore
+            r=randint(-10,10)/100
+            return BlackScore+r-WhiteScore
     
     ####################################################################

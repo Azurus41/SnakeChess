@@ -9,7 +9,7 @@ class Engine:
     def __init__(self):
         self.MAX_PLY = 32
         self.pv_length = [0] * self.MAX_PLY
-        self.endgame = False    
+        self.endgame = False
         self.init_depth = 4 # search in fixed depth
         self.nodes = 0 # number of nodes
         self.clear_pv()
@@ -23,12 +23,17 @@ class Engine:
         self.nodes = 0
         b.ply = 0
 
-        print("ply\tnodes\tscore\tpv")
+        print("ply\ttime\tnodes\tkn/s\tscore\tpv")
         sorted_moves = self.sort_captures(b.gen_moves_list())
 
+        start = time.time()
         for i in range(1, self.init_depth + 1):
             score = self.alphabeta(i, -100, 100, b)
-            print("{}\t{}\t{}\t".format(i, self.nodes, round(score, 2)), end='')
+            end = time.time()
+            if(b.side2move=='blanc'):
+                print("{}\t{}\t{}\t{}\t{}\t".format(i, round(end-start,3), self.nodes, round((self.nodes*(1/round(end-start,3))/1000),2), round(score, 2)), end='')
+            else:
+                print("{}\t{}\t{}\t{}\t{}\t".format(i, round(end-start,3), self.nodes, round((self.nodes*(1/round(end-start,3))/1000),2), round(-score, 2)), end='')
 
             j = 0
             while self.pv[j][j] != 0:
@@ -38,14 +43,15 @@ class Engine:
                 print("{}{}{}".format(pos1, pos2, c[2]), end=' ')
                 j += 1
             print()
-
+            
             if score > 100 or score < -100:
                 break
 
+        time.sleep(4)
         best = self.pv[0][0]
         b.domove(best[0], best[1], best[2])
-        self.print_result(b)
         b.render()
+        self.print_result(b)
 
     def alphabeta(self, depth, alpha, beta, b):
         if depth == 0:
@@ -113,21 +119,7 @@ class Engine:
             else:
                 print("1/2-1/2 {Stalemate}")
             self.endgame = True
-            quit()
+            time.sleep(10000)
             
     def clear_pv(self):
         self.pv = [[0 for x in range(self.MAX_PLY)] for x in range(self.MAX_PLY)]
-    
-    def legalmoves(self,b):
-        
-        "Show legal moves for side to move"
-        
-        mList=b.gen_moves_list()
-        
-        cpt=1
-        for m in mList:
-            if(not b.domove(m[0],m[1],m[2])):
-                continue            
-            print('move #',cpt,':',b.caseInt2Str(m[0])+b.caseInt2Str(m[1])+m[2])
-            b.undomove()
-            cpt+=1
