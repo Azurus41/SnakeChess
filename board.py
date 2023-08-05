@@ -58,52 +58,6 @@ class Board:
         self.black_can_castle_7=True    
         
     ####################################################################
-    
-    def gen_capture_list(self, color='', dontCallIsAttacked=False):
-        """
-        Returns a list of all possible capture moves for the requested color.
-        If color is not given, it is considered as the side to move.
-        dontCallIsAttacked is a boolean flag to avoid recursive calls,
-        due to the actually written is_attacked() function calling
-        this gen_capture_list() function.
-        A capture move is defined as a move that captures an opponent's piece.
-        """
-        if color == '':
-            color = self.side2move
-        capture_list = []
-
-        for pos1, piece in enumerate(self.cases):
-            if piece.couleur != color:
-                continue
-
-            if piece.nom == 'ROI':  # KING
-                capture_list += piece.pos2_roi(pos1, self.oppColor(color), self, dontCallIsAttacked)
-                continue
-
-            elif piece.nom == 'DAME':  # QUEEN = ROOK + BISHOP moves !
-                capture_list += piece.pos2_tour(pos1, self.oppColor(color), self)
-                capture_list += piece.pos2_fou(pos1, self.oppColor(color), self)
-                continue
-
-            elif piece.nom == 'TOUR':  # ROOK
-                capture_list += piece.pos2_tour(pos1, self.oppColor(color), self)
-                continue
-
-            elif piece.nom == 'FOU':  # BISHOP
-                capture_list += piece.pos2_fou(pos1, self.oppColor(color), self)
-                continue
-
-            elif piece.nom == 'CAVALIER':  # KNIGHT
-                capture_list += piece.pos2_cavalier(pos1, self.oppColor(color), self)
-                continue
-
-            elif piece.nom == 'PION':  # PAWN
-                capture_list += piece.pos2_pion(pos1, piece.couleur, self)
-                continue
-
-        return capture_list
-    
-    ####################################################################
 
     def gen_moves_list(self,color='',dontCallIsAttacked=False):
         
