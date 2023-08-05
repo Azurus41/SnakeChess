@@ -56,6 +56,52 @@ class Board:
         self.white_can_castle_63=True
         self.black_can_castle_0=True
         self.black_can_castle_7=True    
+        
+    ####################################################################
+    
+    def gen_capture_list(self, color='', dontCallIsAttacked=False):
+        """
+        Returns a list of all possible capture moves for the requested color.
+        If color is not given, it is considered as the side to move.
+        dontCallIsAttacked is a boolean flag to avoid recursive calls,
+        due to the actually written is_attacked() function calling
+        this gen_capture_list() function.
+        A capture move is defined as a move that captures an opponent's piece.
+        """
+        if color == '':
+            color = self.side2move
+        capture_list = []
+
+        for pos1, piece in enumerate(self.cases):
+            if piece.couleur != color:
+                continue
+
+            if piece.nom == 'ROI':  # KING
+                capture_list += piece.pos2_roi(pos1, self.oppColor(color), self, dontCallIsAttacked)
+                continue
+
+            elif piece.nom == 'DAME':  # QUEEN = ROOK + BISHOP moves !
+                capture_list += piece.pos2_tour(pos1, self.oppColor(color), self)
+                capture_list += piece.pos2_fou(pos1, self.oppColor(color), self)
+                continue
+
+            elif piece.nom == 'TOUR':  # ROOK
+                capture_list += piece.pos2_tour(pos1, self.oppColor(color), self)
+                continue
+
+            elif piece.nom == 'FOU':  # BISHOP
+                capture_list += piece.pos2_fou(pos1, self.oppColor(color), self)
+                continue
+
+            elif piece.nom == 'CAVALIER':  # KNIGHT
+                capture_list += piece.pos2_cavalier(pos1, self.oppColor(color), self)
+                continue
+
+            elif piece.nom == 'PION':  # PAWN
+                capture_list += piece.pos2_pion(pos1, piece.couleur, self)
+                continue
+
+        return capture_list
     
     ####################################################################
 
@@ -543,170 +589,161 @@ class Board:
         for pos1,piece in enumerate(self.cases):         
 
             # Score ( using PESTO table )
-            if(piece.couleur=='blanc'):
+            if(piece.couleur=='blanc' and piece.nom!='VIDE'):
                 WhiteScore+=piece.valeur
                 
-                if piece.nom=='VIDE':
-                    WhiteScore += 0
-                
-                elif piece.nom == 'PION':
+                if piece.nom == 'PION':
                 # Assigning positional bonuses for pawns
-                    pawn_position_bonus =  [   0,   0,   0,   0,   0,   0,  0,   0,
-                                              98, 134,  61,  95,  68, 126, 34, -11,
-                                              -6,   7,  26,  31,  65,  56, 25, -20,
-                                             -14,  13,   6,  21,  23,  12, 17, -23,
-                                             -27,  -2,  -5,  12,  17,   6, 10, -25,
-                                             -26,  -4,  -4, -10,   3,   3, 33, -12,
-                                             -35,  -1, -20, -23, -15,  24, 38, -22,
-                                               0,   0,   0,   0,   0,   0,  0,   0]
-                    WhiteScore += pawn_position_bonus[pos1]/200
+                    pawn_position_bonus =  [ 0,  0,  0,  0,  0,  0,  0,  0,
+                                            50, 50, 50, 50, 50, 50, 50, 50,
+                                            10, 10, 20, 30, 30, 20, 10, 10,
+                                             5,  5, 10, 25, 25, 10,  5,  5,
+                                             0,  0,  0, 20, 20,  0,  0,  0,
+                                             5, -5,-10,  0,  0,-10, -5,  5,
+                                             5, 10, 10,-30,-35, 10, 10,  5,
+                                             0,  0,  0,  0,  0,  0,  0,  0]
+                    WhiteScore += pawn_position_bonus[pos1]/100
                 
                 elif piece.nom == 'CAVALIER':
                 # Assigning positional bonuses for knights
-                    knight_position_bonus = [-167, -89, -34, -49,  61, -97, -15, -107,
-                                              -73, -41,  72,  36,  23,  62,   7,  -17,
-                                              -47,  60,  37,  65,  84, 129,  73,   44,
-                                               -9,  17,  19,  53,  37,  69,  18,   22,
-                                              -13,   4,  16,  13,  28,  19,  21,   -8,
-                                              -23,  -9,  12,  10,  19,  17,  25,  -16,
-                                              -29, -53, -12,  -3,  -1,  18, -14,  -19,
-                                             -105,   0, -58, -33, -17, -28,   0,  -23]
-                    WhiteScore += knight_position_bonus[pos1]/200
+                    knight_position_bonus = [-50,-40,-30,-30,-30,-30,-40,-50,
+                                             -40,-20,  0,  0,  0,  0,-20,-40,
+                                             -30,  0, 10, 15, 15, 10,  0,-30,
+                                             -30,  0, 15, 20, 20, 15,  0,-30,
+                                             -30,  0, 15, 20, 20, 15,  0,-30,
+                                             -30,  5, 10, 15, 15, 10,  5,-30,
+                                             -40,-20,  0,  5,  5,  0,-20,-40,
+                                             -50,-39,-30,-30,-30,-30,-39,-50]
+                    WhiteScore += knight_position_bonus[pos1]/100
                 
                 elif piece.nom == 'FOU':
                 # Assigning positional bonuses for bishops
-                    bishop_position_bonus = [-29,   4, -82, -37, -25, -42,   7,  -8,
-                                             -26,  16, -18, -13,  30,  59,  18, -47,
-                                             -16,  37,  43,  40,  35,  50,  37,  -2,
-                                              -4,   5,  19,  50,  37,  37,   7,  -2,
-                                              -6,  13,  13,  26,  34,  12,  10,   4,
-                                               0,  15,  15,  15,  14,  27,  18,  10,
-                                               4,  15,  16,   0,   7,  21,  33,   1,
-                                             -33,  -3, -14, -21, -13, -12, -39, -21]
-                    WhiteScore += bishop_position_bonus[pos1]/200
+                    bishop_position_bonus = [-20,-10,-10,-10,-10,-10,-10,-20,
+                                             -10,  0,  0,  0,  0,  0,  0,-10,
+                                             -10,  0,  5, 10, 10,  5,  0,-10,
+                                             -10,  5,  5, 10, 10,  5,  5,-10,
+                                             -10,  0, 10, 10, 10, 10,  0,-10,
+                                             -10, 10, 10, 10, 10, 10, 10,-10,
+                                             -10,  5,  0,  0,  0,  0,  5,-10,
+                                             -20,-10,-10,-10,-10,-10,-10,-20]
+                    WhiteScore += bishop_position_bonus[pos1]/100
                 
                 elif piece.nom == 'TOUR':
                 # Assigning positional bonuses for rooks
-                    rook_position_bonus =  [ 32,  42,  32,  51, 63,  9,  31,  43,
-                                             27,  32,  58,  62, 80, 67,  26,  44,
-                                             -5,  19,  26,  36, 17, 45,  61,  16,
-                                            -24, -11,   7,  26, 24, 35,  -8, -20,
-                                            -36, -26, -12,  -1,  9, -7,   6, -23,
-                                            -45, -25, -16, -17,  3,  0,  -5, -33,
-                                            -44, -16, -20,  -9, -1, 11,  -6, -71,
-                                            -19, -13,   1,  17, 16,  7, -37, -26]
-                    WhiteScore += rook_position_bonus[pos1]/200
+                    rook_position_bonus =  [  0,  0,  0,  0,  0,  0,  0,  0,
+                                              5, 10, 10, 10, 10, 10, 10,  5,
+                                             -5,  0,  0,  0,  0,  0,  0, -5,
+                                             -5,  0,  0,  0,  0,  0,  0, -5,
+                                             -5,  0,  0,  0,  0,  0,  0, -5,
+                                             -5,  0,  0,  0,  0,  0,  0, -5,
+                                             -5,  0,  0,  0,  0,  0,  0, -5,
+                                              0,  0,  3,  5,  5,  3,  0,  0]
+                    WhiteScore += rook_position_bonus[pos1]/100
                 
                 elif piece.nom == 'DAME':
                 # Assigning positional bonuses for queen(s)
-                    queen_position_bonus =  [-28,   0,  29,  12,  59,  44,  43,  45,
-                                             -24, -39,  -5,   1, -16,  57,  28,  54,
-                                             -13, -17,   7,   8,  29,  56,  47,  57,
-                                             -27, -27, -16, -16,  -1,  17,  -2,   1,
-                                              -9, -26,  -9, -10,  -2,  -4,   3,  -3,
-                                             -14,   2, -11,  -2,  -5,   2,  14,   5,
-                                             -35,  -8,  11,   2,   8,  15,  -3,   1,
-                                              -1, -18,  -9,  10, -15, -25, -31, -50]
-                    WhiteScore += queen_position_bonus[pos1]/200
+                    queen_position_bonus =  [-20,-10,-10, -5, -5,-10,-10,-20,
+                                             -10,  0,  0,  0,  0,  0,  0,-10,
+                                             -10,  0,  5,  5,  5,  5,  0,-10,
+                                              -5,  0,  5,  5,  5,  5,  0, -5,
+                                               0,  0,  5,  5,  5,  5,  0, -5,
+                                             -10,  5,  5,  5,  5,  5,  0,-10,
+                                             -10,  0,  5,  0,  0,  0,  0,-10,
+                                             -20,-10,-10, -5, -5,-10,-10,-20]
+                    WhiteScore += queen_position_bonus[pos1]/100
                 
                 elif piece.nom == 'ROI':
                 # Assigning positional bonuses for king
-                    king_position_bonus =   [-65,  23,  16, -15, -56, -34,   2,  13,
-                                              29,  -1, -20,  -7,  -8,  -4, -38, -29,
-                                              -9,  24,   2, -16, -20,   6,  22, -22,
-                                             -17, -20, -12, -27, -30, -25, -14, -36,
-                                             -49,  -1, -27, -39, -46, -44, -33, -51,
-                                             -14, -14, -22, -46, -44, -30, -15, -27,
-                                               1,   7,  -8, -64, -43, -16,   9,   8,
-                                             -15,  36,  12, -54,   8, -28,  24,  14]
-                    WhiteScore += king_position_bonus[pos1]/200
+                    king_position_bonus =   [-30,-40,-40,-50,-50,-40,-40,-30,
+                                             -30,-20,-10,  0,  0,-10,-20,-30,
+                                             -30,-10, 20, 30, 30, 20,-10,-30,
+                                             -30,-10, 30, 40, 40, 30,-10,-30,
+                                             -30,-10, 30, 40, 40, 30,-10,-30,
+                                             -30,-10, 20, 30, 30, 20,-10,-30,
+                                             -30,-30,  0,  0,  0,  0,-30,-30,
+                                             -50,-30,-30,-30,-30,-30,-30,-50]
+                    WhiteScore += king_position_bonus[pos1]/100
                 
-            else: 
+            elif(piece.couleur=='noir' and piece.nom!='VIDE'): 
                 BlackScore+=piece.valeur
                 
-                if piece.nom=='VIDE':
-                    WhiteScore += 0
-                
-                elif piece.nom == 'PION':
+                if piece.nom == 'PION':
                 # Assigning positional bonuses for pawns
-                    pawn_position_bonus =  [   0,   0,   0,   0,   0,   0,  0,   0,
-                                              98, 134,  61,  95,  68, 126, 34, -11,
-                                              -6,   7,  26,  31,  65,  56, 25, -20,
-                                             -14,  13,   6,  21,  23,  12, 17, -23,
-                                             -27,  -2,  -5,  12,  17,   6, 10, -25,
-                                             -26,  -4,  -4, -10,   3,   3, 33, -12,
-                                             -35,  -1, -20, -23, -15,  24, 38, -22,
-                                               0,   0,   0,   0,   0,   0,  0,   0]
-                    BlackScore += pawn_position_bonus[pos1^56]/200
+                    pawn_position_bonus =  [ 0,  0,  0,  0,  0,  0,  0,  0,
+                                            50, 50, 50, 50, 50, 50, 50, 50,
+                                            10, 10, 20, 30, 30, 20, 10, 10,
+                                             5,  5, 10, 25, 25, 10,  5,  5,
+                                             0,  0,  0, 20, 20,  0,  0,  0,
+                                             5, -5,-10,  0,  0,-10, -5,  5,
+                                             5, 10, 10,-30,-35, 10, 10,  5,
+                                             0,  0,  0,  0,  0,  0,  0,  0]
+                    BlackScore += pawn_position_bonus[pos1^56]/100
                 
                 elif piece.nom == 'CAVALIER':
                 # Assigning positional bonuses for knights
-                    knight_position_bonus = [-167, -89, -34, -49,  61, -97, -15, -107,
-                                              -73, -41,  72,  36,  23,  62,   7,  -17,
-                                              -47,  60,  37,  65,  84, 129,  73,   44,
-                                               -9,  17,  19,  53,  37,  69,  18,   22,
-                                              -13,   4,  16,  13,  28,  19,  21,   -8,
-                                              -23,  -9,  12,  10,  19,  17,  25,  -16,
-                                              -29, -53, -12,  -3,  -1,  18, -14,  -19,
-                                             -105,   0, -58, -33, -17, -28,   0,  -23]
-                    BlackScore += knight_position_bonus[pos1^56]/200
+                    knight_position_bonus = [-50,-40,-30,-30,-30,-30,-40,-50,
+                                             -40,-20,  0,  0,  0,  0,-20,-40,
+                                             -30,  0, 10, 15, 15, 10,  0,-30,
+                                             -30,  0, 15, 20, 20, 15,  0,-30,
+                                             -30,  0, 15, 20, 20, 15,  0,-30,
+                                             -30,  5, 10, 15, 15, 10,  5,-30,
+                                             -40,-20,  0,  5,  5,  0,-20,-40,
+                                             -50,-39,-30,-30,-30,-30,-39,-50]
+                    BlackScore += knight_position_bonus[pos1^56]/100
                 
                 elif piece.nom == 'FOU':
                 # Assigning positional bonuses for bishops
-                    bishop_position_bonus = [-29,   4, -82, -37, -25, -42,   7,  -8,
-                                             -26,  16, -18, -13,  30,  59,  18, -47,
-                                             -16,  37,  43,  40,  35,  50,  37,  -2,
-                                              -4,   5,  19,  50,  37,  37,   7,  -2,
-                                              -6,  13,  13,  26,  34,  12,  10,   4,
-                                               0,  15,  15,  15,  14,  27,  18,  10,
-                                               4,  15,  16,   0,   7,  21,  33,   1,
-                                             -33,  -3, -14, -21, -13, -12, -39, -21]
-                    BlackScore += bishop_position_bonus[pos1^56]/200
+                    bishop_position_bonus = [-20,-10,-10,-10,-10,-10,-10,-20,
+                                             -10,  0,  0,  0,  0,  0,  0,-10,
+                                             -10,  0,  5, 10, 10,  5,  0,-10,
+                                             -10,  5,  5, 10, 10,  5,  5,-10,
+                                             -10,  0, 10, 10, 10, 10,  0,-10,
+                                             -10, 10, 10, 10, 10, 10, 10,-10,
+                                             -10,  5,  0,  0,  0,  0,  5,-10,
+                                             -20,-10,-10,-10,-10,-10,-10,-20]
+                    BlackScore += bishop_position_bonus[pos1^56]/100
                 
                 elif piece.nom == 'TOUR':
                 # Assigning positional bonuses for rooks
-                    rook_position_bonus =  [ 32,  42,  32,  51, 63,  9,  31,  43,
-                                             27,  32,  58,  62, 80, 67,  26,  44,
-                                             -5,  19,  26,  36, 17, 45,  61,  16,
-                                            -24, -11,   7,  26, 24, 35,  -8, -20,
-                                            -36, -26, -12,  -1,  9, -7,   6, -23,
-                                            -45, -25, -16, -17,  3,  0,  -5, -33,
-                                            -44, -16, -20,  -9, -1, 11,  -6, -71,
-                                            -19, -13,   1,  17, 16,  7, -37, -26]
-                    BlackScore += rook_position_bonus[pos1^56]/200
+                    rook_position_bonus =  [  0,  0,  0,  0,  0,  0,  0,  0,
+                                              5, 10, 10, 10, 10, 10, 10,  5,
+                                             -5,  0,  0,  0,  0,  0,  0, -5,
+                                             -5,  0,  0,  0,  0,  0,  0, -5,
+                                             -5,  0,  0,  0,  0,  0,  0, -5,
+                                             -5,  0,  0,  0,  0,  0,  0, -5,
+                                             -5,  0,  0,  0,  0,  0,  0, -5,
+                                              0,  0,  3,  5,  5,  3,  0,  0]
+                    BlackScore += rook_position_bonus[pos1^56]/100
                 
                 elif piece.nom == 'DAME':
                 # Assigning positional bonuses for queen(s)
-                    queen_position_bonus =  [-28,   0,  29,  12,  59,  44,  43,  45,
-                                             -24, -39,  -5,   1, -16,  57,  28,  54,
-                                             -13, -17,   7,   8,  29,  56,  47,  57,
-                                             -27, -27, -16, -16,  -1,  17,  -2,   1,
-                                              -9, -26,  -9, -10,  -2,  -4,   3,  -3,
-                                             -14,   2, -11,  -2,  -5,   2,  14,   5,
-                                             -35,  -8,  11,   2,   8,  15,  -3,   1,
-                                              -1, -18,  -9,  10, -15, -25, -31, -50]
-                    BlackScore += queen_position_bonus[pos1^56]/200
+                    queen_position_bonus =  [-20,-10,-10, -5, -5,-10,-10,-20,
+                                             -10,  0,  0,  0,  0,  0,  0,-10,
+                                             -10,  0,  5,  5,  5,  5,  0,-10,
+                                              -5,  0,  5,  5,  5,  5,  0, -5,
+                                               0,  0,  5,  5,  5,  5,  0, -5,
+                                             -10,  5,  5,  5,  5,  5,  0,-10,
+                                             -10,  0,  5,  0,  0,  0,  0,-10,
+                                             -20,-10,-10, -5, -5,-10,-10,-20]
+                    BlackScore += queen_position_bonus[pos1^56]/100
                 
                 elif piece.nom == 'ROI':
                 # Assigning positional bonuses for king
-                    king_position_bonus =   [-65,  23,  16, -15, -56, -34,   2,  13,
-                                              29,  -1, -20,  -7,  -8,  -4, -38, -29,
-                                              -9,  24,   2, -16, -20,   6,  22, -22,
-                                             -17, -20, -12, -27, -30, -25, -14, -36,
-                                             -49,  -1, -27, -39, -46, -44, -33, -51,
-                                             -14, -14, -22, -46, -44, -30, -15, -27,
-                                               1,   7,  -8, -64, -43, -16,   9,   8,
-                                             -15,  36,  12, -54,   8, -28,  24,  14]
-                    BlackScore += king_position_bonus[pos1^56]/200
-
-        if mList == []:
-            return 0
+                    king_position_bonus =   [-30,-40,-40,-50,-50,-40,-40,-30,
+                                             -30,-40,-40,-50,-50,-40,-40,-30,
+                                             -30,-40,-40,-50,-50,-40,-40,-30,
+                                             -30,-40,-40,-50,-50,-40,-40,-30,
+                                             -20,-30,-30,-40,-40,-30,-30,-20,
+                                             -10,-20,-20,-20,-20,-20,-20,-10,
+                                              20, 20,  0,  0,  0,  0, 20, 20,
+                                              20, 30, 10,  0,  0, 10, 30, 20]
+                    BlackScore += king_position_bonus[pos1^56]/100
 
         if(self.side2move=='blanc'):
-            r=randint(-10,10)/100
+            r=randint(-20,20)/100
             return WhiteScore+r-BlackScore
         else:
-            r=randint(-10,10)/100
+            r=randint(-20,20)/100
             return BlackScore+r-WhiteScore
     
     ####################################################################

@@ -1,4 +1,4 @@
-#Pychess engine.py
+# Pychess engine.py
 
 from piece import *
 import time
@@ -8,11 +8,39 @@ class Engine:
     
     def __init__(self):
         self.MAX_PLY = 32
+        self.INFINITY = 10000 
         self.pv_length = [0] * self.MAX_PLY
         self.endgame = False
-        self.init_depth = 4 # search in fixed depth
-        self.nodes = 0 # number of nodes
+        self.init_depth = 4  # search in fixed depth
+        self.nodes = 0  # number of nodes
         self.clear_pv()
+        
+    def qsearch(self, alpha, beta, b):
+        self.nodes += 1
+        
+        if b.ply >= self.MAX_PLY:
+            return b.evaluer()  # Return an evaluation of the position
+        
+        stand_pat = b.evaluer()  # Initial evaluation of the position
+        if stand_pat >= beta:
+            return beta
+        
+        alpha = max(alpha, stand_pat)
+        
+        captures = self.sort_captures(b.gen_capture_list())  # Use gen_captures_list here
+        for move in captures:
+            if not b.domove(move[0], move[1], move[2]):
+                continue
+            
+            score = -self.qsearch(-beta, -alpha, b)
+            b.undomove()
+            
+            if score >= beta:
+                return beta
+            
+            alpha = max(alpha, score)
+        
+        return alpha
         
     def search(self, b):
         if self.endgame:
@@ -28,12 +56,12 @@ class Engine:
 
         start = time.time()
         for i in range(1, self.init_depth + 1):
-            score = self.alphabeta(i, -100, 100, b)
+            score = self.alphabeta(i, -self.INFINITY, self.INFINITY, b)
             end = time.time()
-            if(b.side2move=='blanc'):
-                print("{}\t{}\t{}\t{}\t{}\t".format(i, round(end-start,3), self.nodes, round((self.nodes*(1/round(end-start,3))/1000),2), round(score, 2)), end='')
+            if b.side2move == 'blanc':
+                print("{}\t{}\t{}\t{}\t{}\t".format(i, round(end - start, 3), self.nodes, round((self.nodes * (1 / round(end - start, 3)) / 1000), 2), round(score, 2)), end='')
             else:
-                print("{}\t{}\t{}\t{}\t{}\t".format(i, round(end-start,3), self.nodes, round((self.nodes*(1/round(end-start,3))/1000),2), round(-score, 2)), end='')
+                print("{}\t{}\t{}\t{}\t{}\t".format(i, round(end - start, 3), self.nodes, round((self.nodes * (1 / round(end - start, 3)) / 1000), 2), round(-score, 2)), end='')
 
             j = 0
             while self.pv[j][j] != 0:
@@ -54,8 +82,8 @@ class Engine:
         self.print_result(b)
 
     def alphabeta(self, depth, alpha, beta, b):
-        if depth == 0:
-            return b.evaluer()
+        if depth <= 0:
+            return self.qsearch(alpha, beta, b)
 
         self.nodes += 1
         self.pv_length[b.ply] = b.ply
@@ -66,7 +94,7 @@ class Engine:
 
         last_move_capture = False  # Variable to keep track if the last move was a capture
         
-        best_score = -100
+        best_score = -self.INFINITY 
         pv_move = None
 
         sorted_moves = self.sort_captures(b.gen_moves_list())
@@ -104,6 +132,10 @@ class Engine:
         captures = [move for move in moves_list if move[2] is not None]
         non_captures = [move for move in moves_list if move[2] is None]
         return captures + non_captures
+
+    def gen_captures_list(self, b):  # Add 'b' parameter
+        captures = [move for move in b.gen_moves_list() if move[2] is not None]
+        return captures
 
     def print_result(self, b):
         f = False
