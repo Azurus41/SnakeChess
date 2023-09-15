@@ -1,11 +1,12 @@
 # Pychess main.py
 
-# Import object classes
 from board import *
 from engine import *
 
-b=Board()
-e=Engine()
+b = Board()
+e = Engine()
 
-while(True):
+while True:
     e.search(b)
+    b.showHistory()
+    e.print_result(b)
